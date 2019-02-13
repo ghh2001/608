@@ -1,0 +1,106 @@
+---
+title: "DATA 608 HW1"
+author: "Hui Han"
+date: "February 12, 2019"
+output: html_document
+---
+
+**Principles of Data Visualization and Introduction to ggplot2**
+
+I have provided you with data about the 5,000 fastest growing companies in the US, as compiled by Inc. magazine. lets read this in:
+
+```{r}
+
+inc <- read.csv("https://raw.githubusercontent.com/charleyferrari/CUNY_DATA_608/master/module1/Data/inc5000_data.csv", header= TRUE)
+
+```
+
+
+And lets preview this data:
+```{r}
+
+head(inc)
+
+```
+
+```{r}
+
+summary(inc)
+
+```
+```{r}
+str(inc)
+```
+
+1. Create a graph that shows the distribution of companies in the dataset by State (i.e. how many are in each state). There are a lot of States, so consider which axis you should use assuming I am using a 'portrait' oriented screen
+```{r}
+require(ggplot2)
+require(dplyr)
+```
+
+```{r fig.width=8, fig.height=12}
+p <- ggplot(inc, aes(factor(State))) + geom_bar(fill="purple")
+p <- p + coord_flip()
+p <- p + theme(text = element_text(size=12), axis.title=element_text(size=14,face="bold")) 
+p <- p + labs(title = "Counts of Companies by State", x= "State", y= "Count")
+p <- p + theme(plot.title = element_text(size=18))
+p
+```
+
+
+2.For the State with the 3rd most companies, create a plot of average employment by industry for companies in this state (only use cases with full data. Your graph should show how variable the ranges are, and exclude outliers.
+```{r}
+counts <- as.data.frame(table(inc$State))
+colnames(counts) <- c("State", "Count")
+head(counts)
+```
+Find the 3rd most companies by state
+```{r}
+x <- sort(counts$Count, TRUE)[3] 
+filter(counts, Count == x)
+```
+Remove incomplete cases
+```{r}
+ny_inc <- filter(inc, State == "NY")
+ny_inc <- ny_inc[complete.cases(ny_inc),]
+glimpse(ny_inc)
+```
+
+
+try box plot
+```{r fig.width = 12, fig.height = 6}
+ny_inc <- ny_inc[c("Industry","Employees")]
+IM <- aggregate(ny_inc$Employees, by=list(ny_inc$Industry), 
+  FUN=mean, na.rm=TRUE)
+colnames(IM) <- c("Industry","EmployeeMean")
+
+p <- ggplot(ny_inc,aes(ny_inc$Industry, ny_inc$Employees))+geom_boxplot()+theme_classic()+scale_y_log10()+labs(title="Employees by Industry in NY", x="Industry", y="Employee Counts log scale")
+p+coord_flip()
+
+```
+
+
+
+3. Generate a chart showing which industries generate the most revenue per employee.
+```{r}
+#remove incomplete cases
+inc_rev <- inc[complete.cases(inc),]
+# Create a new column rev_per_em = revenue/employee using mutate
+inc_rev <- inc_rev %>% mutate(rev_per_em = Revenue / Employees)
+glimpse(inc_rev)
+```
+make a plot
+```{r fig.width = 8, fig.height= 6}
+p2 <- ggplot(inc_rev) +  geom_bar(aes(Industry, rev_per_em, fill = Industry), position = "dodge", stat = "summary", fun.y = "mean", fill="purple")
+p2 <- p2 + coord_flip()
+p2 <- p2 + theme(legend.position="none")
+p2 <- p2 + theme(text = element_text(size=12), axis.title=element_text(size=14,face="bold")) 
+p2 <- p2 + labs(title = "Average Revenue per Employees by Industry", x= "Industry", y= "Average Revenue per Employees")
+p2 <- p2 + theme(plot.title = element_text(size=18))
+p2
+```
+
+
+
+
+
